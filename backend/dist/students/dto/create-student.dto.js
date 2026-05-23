@@ -1,0 +1,102 @@
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.CreateStudentDto = void 0;
+const class_validator_1 = require("class-validator");
+class CreateStudentDto {
+    name;
+    phone_country_code;
+    phone_number;
+    email;
+    counselor_name;
+    source_type;
+    source_name;
+    date_of_opening;
+    file_opening_fee_bdt;
+    country_id;
+    application_fee_foreign;
+    application_fee_bdt;
+    exchange_rate_used;
+}
+exports.CreateStudentDto = CreateStudentDto;
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Matches)(/^[a-zA-Z\s]+$/, { message: 'Name must contain only alphabets and spaces.' }),
+    __metadata("design:type", String)
+], CreateStudentDto.prototype, "name", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateStudentDto.prototype, "phone_country_code", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Matches)(/^[0-9]+$/, { message: 'Phone number must contain only numbers.' }),
+    __metadata("design:type", String)
+], CreateStudentDto.prototype, "phone_number", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsEmail)({}, { message: 'Email must be a valid email address.' }),
+    __metadata("design:type", String)
+], CreateStudentDto.prototype, "email", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Matches)(/^[a-zA-Z\s]+$/, { message: 'Counselor name must contain only alphabets and spaces.' }),
+    __metadata("design:type", String)
+], CreateStudentDto.prototype, "counselor_name", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateStudentDto.prototype, "source_type", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateStudentDto.prototype, "source_name", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateStudentDto.prototype, "date_of_opening", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0, { message: 'File opening fee must be positive.' }),
+    __metadata("design:type", Number)
+], CreateStudentDto.prototype, "file_opening_fee_bdt", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateStudentDto.prototype, "country_id", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0, { message: 'Application fee in foreign currency must be positive.' }),
+    __metadata("design:type", Number)
+], CreateStudentDto.prototype, "application_fee_foreign", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0, { message: 'Application fee in BDT must be positive.' }),
+    __metadata("design:type", Number)
+], CreateStudentDto.prototype, "application_fee_bdt", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0, { message: 'Exchange rate used must be positive.' }),
+    __metadata("design:type", Number)
+], CreateStudentDto.prototype, "exchange_rate_used", void 0);
+//# sourceMappingURL=create-student.dto.js.map
