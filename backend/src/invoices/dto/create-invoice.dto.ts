@@ -32,6 +32,15 @@ export class CreateInvoiceDto {
 
   @IsNotEmpty()
   @IsNumber()
+  country_id: number;
+
+  @IsNotEmpty()
+  @IsNumber()
+  @Min(0, { message: 'Application fee in BDT must be positive.' })
+  application_fee_bdt: number;
+
+  @IsNotEmpty()
+  @IsNumber()
   @Min(0, { message: 'Paid amount must be positive.' })
   paid_amount_bdt: number;
 }

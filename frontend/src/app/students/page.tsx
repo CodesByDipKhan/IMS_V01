@@ -161,10 +161,10 @@ export default function StudentsInfoPage() {
                         </Button>
                         <Button
                           variant="action"
-                          onClick={() => router.push(`/students/${student.id}/update`)}
+                          onClick={() => router.push(`/invoices/create?studentId=${student.id}`)}
                           className="px-3 py-1.5 text-xs"
                         >
-                          Update
+                          Generate Invoice
                         </Button>
                       </div>
                     </td>

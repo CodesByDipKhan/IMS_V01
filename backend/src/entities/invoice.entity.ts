@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { Student } from './student.entity';
+import { Country } from './country.entity';
 
 @Entity('invoices')
 export class Invoice {
@@ -33,6 +34,19 @@ export class Invoice {
 
   @Column({ nullable: true })
   bank_name: string;
+
+  @Column({ nullable: true })
+  country_id: number;
+
+  @ManyToOne(() => Country)
+  @JoinColumn({ name: 'country_id' })
+  country: Country;
+
+  @Column('decimal', { nullable: true, precision: 12, scale: 2, transformer: {
+    to: (value: number) => value,
+    from: (value: string) => parseFloat(value)
+  }})
+  application_fee_bdt: number;
 
   @Column('decimal', { precision: 12, scale: 2, transformer: {
     to: (value: number) => value,

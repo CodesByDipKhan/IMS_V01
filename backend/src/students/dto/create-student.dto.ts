@@ -40,23 +40,4 @@ export class CreateStudentDto {
   @IsNumber()
   @Min(0, { message: 'File opening fee must be positive.' })
   file_opening_fee_bdt: number;
-
-  @IsNotEmpty()
-  @IsNumber()
-  country_id: number;
-
-  @IsNotEmpty()
-  @IsNumber()
-  @Min(0, { message: 'Application fee in foreign currency must be positive.' })
-  application_fee_foreign: number;
-
-  @IsNotEmpty()
-  @IsNumber()
-  @Min(0, { message: 'Application fee in BDT must be positive.' })
-  application_fee_bdt: number;
-
-  @IsNotEmpty()
-  @IsNumber()
-  @Min(0, { message: 'Exchange rate used must be positive.' })
-  exchange_rate_used: number;
 }

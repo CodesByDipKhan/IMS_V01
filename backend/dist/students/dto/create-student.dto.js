@@ -21,10 +21,6 @@ class CreateStudentDto {
     source_name;
     date_of_opening;
     file_opening_fee_bdt;
-    country_id;
-    application_fee_foreign;
-    application_fee_bdt;
-    exchange_rate_used;
 }
 exports.CreateStudentDto = CreateStudentDto;
 __decorate([
@@ -76,27 +72,4 @@ __decorate([
     (0, class_validator_1.Min)(0, { message: 'File opening fee must be positive.' }),
     __metadata("design:type", Number)
 ], CreateStudentDto.prototype, "file_opening_fee_bdt", void 0);
-__decorate([
-    (0, class_validator_1.IsNotEmpty)(),
-    (0, class_validator_1.IsNumber)(),
-    __metadata("design:type", Number)
-], CreateStudentDto.prototype, "country_id", void 0);
-__decorate([
-    (0, class_validator_1.IsNotEmpty)(),
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(0, { message: 'Application fee in foreign currency must be positive.' }),
-    __metadata("design:type", Number)
-], CreateStudentDto.prototype, "application_fee_foreign", void 0);
-__decorate([
-    (0, class_validator_1.IsNotEmpty)(),
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(0, { message: 'Application fee in BDT must be positive.' }),
-    __metadata("design:type", Number)
-], CreateStudentDto.prototype, "application_fee_bdt", void 0);
-__decorate([
-    (0, class_validator_1.IsNotEmpty)(),
-    (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(0, { message: 'Exchange rate used must be positive.' }),
-    __metadata("design:type", Number)
-], CreateStudentDto.prototype, "exchange_rate_used", void 0);
 //# sourceMappingURL=create-student.dto.js.map

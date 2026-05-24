@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Invoice = void 0;
 const typeorm_1 = require("typeorm");
 const student_entity_1 = require("./student.entity");
+const country_entity_1 = require("./country.entity");
 let Invoice = class Invoice {
     id;
     invoice_id;
@@ -23,6 +24,9 @@ let Invoice = class Invoice {
     payment_method;
     payment_detail;
     bank_name;
+    country_id;
+    country;
+    application_fee_bdt;
     total_amount_bdt;
     paid_amount_bdt;
     due_amount_bdt;
@@ -71,6 +75,22 @@ __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", String)
 ], Invoice.prototype, "bank_name", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", Number)
+], Invoice.prototype, "country_id", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => country_entity_1.Country),
+    (0, typeorm_1.JoinColumn)({ name: 'country_id' }),
+    __metadata("design:type", country_entity_1.Country)
+], Invoice.prototype, "country", void 0);
+__decorate([
+    (0, typeorm_1.Column)('decimal', { nullable: true, precision: 12, scale: 2, transformer: {
+            to: (value) => value,
+            from: (value) => parseFloat(value)
+        } }),
+    __metadata("design:type", Number)
+], Invoice.prototype, "application_fee_bdt", void 0);
 __decorate([
     (0, typeorm_1.Column)('decimal', { precision: 12, scale: 2, transformer: {
             to: (value) => value,

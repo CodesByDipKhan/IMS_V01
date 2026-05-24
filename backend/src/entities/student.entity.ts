@@ -46,19 +46,19 @@ export class Student {
   @JoinColumn({ name: 'country_id' })
   country: Country;
 
-  @Column('decimal', { precision: 10, scale: 2, transformer: {
+  @Column('decimal', { nullable: true, precision: 10, scale: 2, transformer: {
     to: (value: number) => value,
     from: (value: string) => parseFloat(value)
   }})
   application_fee_foreign: number;
 
-  @Column('decimal', { precision: 12, scale: 2, transformer: {
+  @Column('decimal', { nullable: true, precision: 12, scale: 2, transformer: {
     to: (value: number) => value,
     from: (value: string) => parseFloat(value)
   }})
   application_fee_bdt: number;
 
-  @Column('decimal', { precision: 10, scale: 4, transformer: {
+  @Column('decimal', { nullable: true, precision: 10, scale: 4, transformer: {
     to: (value: number) => value,
     from: (value: string) => parseFloat(value)
   }})

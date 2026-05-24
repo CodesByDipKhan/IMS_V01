@@ -89,21 +89,21 @@ __decorate([
     __metadata("design:type", country_entity_1.Country)
 ], Student.prototype, "country", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 10, scale: 2, transformer: {
+    (0, typeorm_1.Column)('decimal', { nullable: true, precision: 10, scale: 2, transformer: {
             to: (value) => value,
             from: (value) => parseFloat(value)
         } }),
     __metadata("design:type", Number)
 ], Student.prototype, "application_fee_foreign", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 12, scale: 2, transformer: {
+    (0, typeorm_1.Column)('decimal', { nullable: true, precision: 12, scale: 2, transformer: {
             to: (value) => value,
             from: (value) => parseFloat(value)
         } }),
     __metadata("design:type", Number)
 ], Student.prototype, "application_fee_bdt", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 10, scale: 4, transformer: {
+    (0, typeorm_1.Column)('decimal', { nullable: true, precision: 10, scale: 4, transformer: {
             to: (value) => value,
             from: (value) => parseFloat(value)
         } }),

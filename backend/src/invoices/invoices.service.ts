@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Invoice } from '../entities/invoice.entity';
@@ -36,11 +36,26 @@ export class InvoicesService {
       throw new NotFoundException(`Student with ID ${createInvoiceDto.student_id} not found.`);
     }
 
-    // 2. Calculate Total and Due BDT amounts
-    const totalAmount = student.file_opening_fee_bdt + student.application_fee_bdt;
+    // 2. Fetch the latest invoice of this student to calculate previous due
+    const latestInvoice = await this.invoicesRepository.findOne({
+      where: { student_id: student.id },
+      order: { id: 'DESC' },
+    });
+    const previousDue = latestInvoice ? latestInvoice.due_amount_bdt : student.file_opening_fee_bdt;
+
+    // 3. Calculate Total and Due BDT amounts
+    const totalAmount = previousDue + createInvoiceDto.application_fee_bdt;
+
+    // Guard: paid amount must not exceed total amount
+    if (createInvoiceDto.paid_amount_bdt > totalAmount) {
+      throw new BadRequestException(
+        `Paid amount (${createInvoiceDto.paid_amount_bdt}) cannot exceed total amount (${totalAmount}).`
+      );
+    }
+
     const dueAmount = totalAmount - createInvoiceDto.paid_amount_bdt;
 
-    // 3. Global auto-incrementing invoice ID sequence (format: NextEd/01, NextEd/02, ...)
+    // 4. Global auto-incrementing invoice ID sequence (format: NextEd/INV/{number})
     let seq = await this.sequencesRepository.findOne({ where: { key: 'invoice_id' } });
     if (!seq) {
       seq = this.sequencesRepository.create({ key: 'invoice_id', value: 1 });
@@ -49,18 +64,14 @@ export class InvoicesService {
     }
     await this.sequencesRepository.save(seq);
 
-    // Pad to at least 2 digits (01, 02 ... 99, 100, 101 ...)
-    const paddedSeq = seq.value <= 99
-      ? String(seq.value).padStart(2, '0')
-      : String(seq.value);
-    const invoiceId = `NextEd/${paddedSeq}`;
+    const invoiceId = `NextEd/INV/${seq.value}`;
 
-    // 4. Replace forward slashes with underscores for safe file names
+    // 5. Replace forward slashes with underscores for safe file names
     const safeInvoiceId = invoiceId.replace(/\//g, '_');
     const pdfFilename = `${safeInvoiceId}.pdf`;
     const pdfPath = path.join(this.pdfStoragePath, pdfFilename);
 
-    // 5. Create and save the Database Invoice record
+    // 6. Create and save the Database Invoice record
     const invoice = this.invoicesRepository.create({
       ...createInvoiceDto,
       invoice_id: invoiceId,
@@ -71,9 +82,22 @@ export class InvoicesService {
 
     const savedInvoice = await this.invoicesRepository.save(invoice);
 
-    // 6. Trigger Puppeteer PDF generation
+    // Fetch the invoice with relations loaded for pdf layout rendering
+    const populatedInvoice = await this.invoicesRepository.findOne({
+      where: { id: savedInvoice.id },
+      relations: { country: true },
+    });
+
+    // 7. Trigger Puppeteer PDF generation
     try {
-      await this.pdfService.generateInvoicePdf(savedInvoice, student.name, pdfPath);
+      await this.pdfService.generateInvoicePdf(
+        populatedInvoice,
+        student.name,
+        student.phone_country_code,
+        student.phone_number,
+        student.file_opening_fee_bdt,
+        pdfPath,
+      );
     } catch (e) {
       console.error('Puppeteer invoice PDF compilation failed. DB entry created but PDF file is missing:', e);
     }
@@ -83,7 +107,8 @@ export class InvoicesService {
 
   async findAll(invoiceId?: string): Promise<any[]> {
     const qb = this.invoicesRepository.createQueryBuilder('invoice')
-      .leftJoinAndSelect('invoice.student', 'student');
+      .leftJoinAndSelect('invoice.student', 'student')
+      .leftJoinAndSelect('invoice.country', 'country');
 
     if (invoiceId) {
       qb.andWhere('invoice.invoice_id ILIKE :invoiceId', { invoiceId: `%${invoiceId}%` });
@@ -104,7 +129,7 @@ export class InvoicesService {
   async findOne(id: number): Promise<Invoice> {
     const invoice = await this.invoicesRepository.findOne({
       where: { id },
-      relations: { student: true },
+      relations: { student: true, country: true },
     });
     if (!invoice) {
       throw new NotFoundException(`Invoice with ID ${id} not found.`);

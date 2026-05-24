@@ -107,15 +107,22 @@ export class StudentsService {
       throw new NotFoundException(`Student with ID ${id} not found.`);
     }
 
-    // Load full invoice history for details
+    // Load full invoice history for details ordered by sequential ID
     const invoices = await this.invoicesRepository.find({
       where: { student_id: student.id },
-      order: { created_at: 'DESC' },
+      order: { id: 'DESC' },
+      relations: { country: true },
     });
+
+    const latestInvoice = invoices.length > 0 ? invoices[0] : null;
+    const previous_due = latestInvoice
+      ? latestInvoice.due_amount_bdt
+      : student.file_opening_fee_bdt;
 
     return {
       ...student,
       invoices,
+      previous_due,
     };
   }
 

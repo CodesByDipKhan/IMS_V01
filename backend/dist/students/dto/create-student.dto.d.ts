@@ -8,8 +8,4 @@ export declare class CreateStudentDto {
     source_name: string;
     date_of_opening: string;
     file_opening_fee_bdt: number;
-    country_id: number;
-    application_fee_foreign: number;
-    application_fee_bdt: number;
-    exchange_rate_used: number;
 }

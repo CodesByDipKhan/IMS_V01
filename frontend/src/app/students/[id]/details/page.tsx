@@ -19,13 +19,6 @@ interface StudentDetail {
   source_name: string;
   date_of_opening: string;
   file_opening_fee_bdt: number;
-  country: {
-    name: string;
-    currency_symbol: string;
-  };
-  application_fee_foreign: number;
-  application_fee_bdt: number;
-  exchange_rate_used: number;
   invoices: {
     id: number;
     invoice_id: string;
@@ -34,6 +27,10 @@ interface StudentDetail {
     payer_phone_number: string;
     payment_method: string;
     payment_detail: string;
+    country?: {
+      name: string;
+    };
+    application_fee_bdt?: number;
     total_amount_bdt: number;
     paid_amount_bdt: number;
     due_amount_bdt: number;
@@ -130,10 +127,8 @@ export default function StudentDetailsPage() {
               <DetailRow label="Date of Opening" value={new Date(student.date_of_opening).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} />
               <DetailRow label="Counselor Name" value={student.counselor_name} />
               <DetailRow label="Source Type" value={student.source_type === 'employee' ? 'Employee' : 'Social Media'} />
-              <DetailRow label="Source Name" value={student.source_name} />
             </div>
           </div>
-
           {/* Financial Details Card */}
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             <div className="bg-green-600 px-6 py-3">
@@ -141,45 +136,44 @@ export default function StudentDetailsPage() {
             </div>
             <div className="px-6 py-2">
               <DetailRow label="File Opening Fee" value={`BDT ${parseFloat(String(student.file_opening_fee_bdt)).toLocaleString('en-US', { minimumFractionDigits: 2 })}`} />
-              <DetailRow
-                label="Destination Country"
-                value={student.country?.name}
-              />
-              <DetailRow
-                label="Application Fee (Foreign)"
-                value={`${student.country?.currency_symbol}${parseFloat(String(student.application_fee_foreign)).toFixed(2)}`}
-              />
-              <DetailRow
-                label="Application Fee (BDT)"
-                value={`BDT ${parseFloat(String(student.application_fee_bdt)).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-              />
-              <DetailRow
-                label="Exchange Rate Used"
-                value={`1 ${student.country?.currency_symbol} = ${parseFloat(String(student.exchange_rate_used)).toFixed(4)} BDT`}
-              />
             </div>
           </div>
 
           {/* Invoice Information Card */}
-          {latestInvoice ? (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <div className="bg-indigo-600 px-6 py-3 flex items-center justify-between">
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-                  Latest Invoice — {student.invoices.length} total
-                </h3>
-              </div>
-              <div className="px-6 py-2">
-                <DetailRow label="Invoice ID" value={latestInvoice.invoice_id} />
-                <DetailRow label="Payer's Name" value={latestInvoice.payer_name} />
-                <DetailRow label="Payer's Phone" value={`${latestInvoice.payer_phone_country_code} ${latestInvoice.payer_phone_number}`} />
-                <DetailRow label="Payment Method" value={latestInvoice.payment_method?.toUpperCase()} />
-                {latestInvoice.payment_detail && (
-                  <DetailRow label="Payment Detail" value={latestInvoice.payment_detail} />
-                )}
-                <DetailRow label="Total Amount" value={`BDT ${parseFloat(String(latestInvoice.total_amount_bdt)).toLocaleString('en-US', { minimumFractionDigits: 2 })}`} />
-                <DetailRow label="Paid Amount" value={`BDT ${parseFloat(String(latestInvoice.paid_amount_bdt)).toLocaleString('en-US', { minimumFractionDigits: 2 })}`} />
-                <DetailRow label="Due Amount" value={`BDT ${parseFloat(String(latestInvoice.due_amount_bdt)).toLocaleString('en-US', { minimumFractionDigits: 2 })}`} />
-              </div>
+          {student.invoices && student.invoices.length > 0 ? (
+            <div className="space-y-4">
+              <h3 className="text-sm font-extrabold text-blue-600 uppercase tracking-wider">
+                Invoice History — {student.invoices.length} total
+              </h3>
+              {student.invoices.map((inv) => (
+                <div key={inv.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow transition-shadow">
+                  <div className="bg-indigo-600 px-6 py-3 flex items-center justify-between">
+                    <span className="text-sm font-bold text-white uppercase tracking-wider font-mono">
+                      Invoice ID: {inv.invoice_id}
+                    </span>
+                    <span className="text-xs text-white/85 font-semibold">
+                      {new Date(inv.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                    </span>
+                  </div>
+                  <div className="px-6 py-4 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm border-t border-gray-100">
+                    <DetailRow label="Payer Name" value={inv.payer_name} />
+                    <DetailRow label="Payer Phone" value={`${inv.payer_phone_country_code} ${inv.payer_phone_number}`} />
+                    <DetailRow label="Payment Method" value={inv.payment_method?.toUpperCase()} />
+                    {inv.payment_detail && (
+                      <DetailRow label="Payment Detail" value={inv.payment_detail} />
+                    )}
+                    {inv.country?.name && (
+                      <DetailRow label="Destination Country" value={inv.country.name} />
+                    )}
+                    {inv.application_fee_bdt !== undefined && inv.application_fee_bdt !== null && Number(inv.application_fee_bdt) > 0 && (
+                      <DetailRow label="Application Fee" value={`BDT ${parseFloat(String(inv.application_fee_bdt)).toLocaleString('en-US', { minimumFractionDigits: 2 })}`} />
+                    )}
+                    <DetailRow label="Total Amount" value={`BDT ${parseFloat(String(inv.total_amount_bdt)).toLocaleString('en-US', { minimumFractionDigits: 2 })}`} />
+                    <DetailRow label="Paid Amount" value={`BDT ${parseFloat(String(inv.paid_amount_bdt)).toLocaleString('en-US', { minimumFractionDigits: 2 })}`} />
+                    <DetailRow label="Due Amount" value={`BDT ${parseFloat(String(inv.due_amount_bdt)).toLocaleString('en-US', { minimumFractionDigits: 2 })}`} />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
             <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-center">

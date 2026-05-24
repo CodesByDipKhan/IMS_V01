@@ -43,6 +43,10 @@ export const InputField: React.FC<InputFieldProps> = ({
           className={`w-full px-3 py-2 border rounded-lg bg-white shadow-sm outline-none transition-all duration-150 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${
             error ? 'border-red-500' : 'border-gray-300'
           }`}
+          onWheel={props.type === 'number' ? (e) => (e.currentTarget as HTMLInputElement).blur() : undefined}
+          onKeyDown={props.type === 'number' ? (e) => {
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault();
+          } : undefined}
           {...(props as any)}
         />
       )}

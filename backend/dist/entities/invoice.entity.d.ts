@@ -1,4 +1,5 @@
 import { Student } from './student.entity';
+import { Country } from './country.entity';
 export declare class Invoice {
     id: number;
     invoice_id: string;
@@ -10,6 +11,9 @@ export declare class Invoice {
     payment_method: string;
     payment_detail: string;
     bank_name: string;
+    country_id: number;
+    country: Country;
+    application_fee_bdt: number;
     total_amount_bdt: number;
     paid_amount_bdt: number;
     due_amount_bdt: number;

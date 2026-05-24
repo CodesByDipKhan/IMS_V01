@@ -76,7 +76,15 @@ let InvoicesService = class InvoicesService {
         if (!student) {
             throw new common_1.NotFoundException(`Student with ID ${createInvoiceDto.student_id} not found.`);
         }
-        const totalAmount = student.file_opening_fee_bdt + student.application_fee_bdt;
+        const latestInvoice = await this.invoicesRepository.findOne({
+            where: { student_id: student.id },
+            order: { id: 'DESC' },
+        });
+        const previousDue = latestInvoice ? latestInvoice.due_amount_bdt : student.file_opening_fee_bdt;
+        const totalAmount = previousDue + createInvoiceDto.application_fee_bdt;
+        if (createInvoiceDto.paid_amount_bdt > totalAmount) {
+            throw new common_1.BadRequestException(`Paid amount (${createInvoiceDto.paid_amount_bdt}) cannot exceed total amount (${totalAmount}).`);
+        }
         const dueAmount = totalAmount - createInvoiceDto.paid_amount_bdt;
         let seq = await this.sequencesRepository.findOne({ where: { key: 'invoice_id' } });
         if (!seq) {
@@ -86,10 +94,7 @@ let InvoicesService = class InvoicesService {
             seq.value += 1;
         }
         await this.sequencesRepository.save(seq);
-        const paddedSeq = seq.value <= 99
-            ? String(seq.value).padStart(2, '0')
-            : String(seq.value);
-        const invoiceId = `NextEd/${paddedSeq}`;
+        const invoiceId = `NextEd/INV/${seq.value}`;
         const safeInvoiceId = invoiceId.replace(/\//g, '_');
         const pdfFilename = `${safeInvoiceId}.pdf`;
         const pdfPath = path.join(this.pdfStoragePath, pdfFilename);
@@ -101,8 +106,12 @@ let InvoicesService = class InvoicesService {
             pdf_path: pdfPath,
         });
         const savedInvoice = await this.invoicesRepository.save(invoice);
+        const populatedInvoice = await this.invoicesRepository.findOne({
+            where: { id: savedInvoice.id },
+            relations: { country: true },
+        });
         try {
-            await this.pdfService.generateInvoicePdf(savedInvoice, student.name, pdfPath);
+            await this.pdfService.generateInvoicePdf(populatedInvoice, student.name, student.phone_country_code, student.phone_number, student.file_opening_fee_bdt, pdfPath);
         }
         catch (e) {
             console.error('Puppeteer invoice PDF compilation failed. DB entry created but PDF file is missing:', e);
@@ -111,7 +120,8 @@ let InvoicesService = class InvoicesService {
     }
     async findAll(invoiceId) {
         const qb = this.invoicesRepository.createQueryBuilder('invoice')
-            .leftJoinAndSelect('invoice.student', 'student');
+            .leftJoinAndSelect('invoice.student', 'student')
+            .leftJoinAndSelect('invoice.country', 'country');
         if (invoiceId) {
             qb.andWhere('invoice.invoice_id ILIKE :invoiceId', { invoiceId: `%${invoiceId}%` });
         }
@@ -128,7 +138,7 @@ let InvoicesService = class InvoicesService {
     async findOne(id) {
         const invoice = await this.invoicesRepository.findOne({
             where: { id },
-            relations: { student: true },
+            relations: { student: true, country: true },
         });
         if (!invoice) {
             throw new common_1.NotFoundException(`Invoice with ID ${id} not found.`);

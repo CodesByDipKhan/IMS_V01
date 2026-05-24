@@ -10,13 +10,7 @@ import { Modal } from '@/components/Modal';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import api from '@/lib/api';
 
-interface Country {
-  id: number;
-  name: string;
-  currency_code: string;
-  currency_symbol: string;
-  application_fee: number;
-}
+
 
 interface Employee {
   id: number;
@@ -32,7 +26,6 @@ export default function AddStudentPage() {
   const router = useRouter();
 
   // Reference lists
-  const [countries, setCountries] = useState<Country[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [counselors, setCounselors] = useState<Counselor[]>([]);
 
@@ -46,13 +39,6 @@ export default function AddStudentPage() {
   const [sourceName, setSourceName] = useState('');
   const [dateOfOpening, setDateOfOpening] = useState('');
   const [fileOpeningFeeBdt, setFileOpeningFeeBdt] = useState('');
-  
-  // Country & Application Fee states
-  const [selectedCountryId, setSelectedCountryId] = useState<number | ''>('');
-  const [applicationFeeForeign, setApplicationFeeForeign] = useState('');
-  const [calculatedBdt, setCalculatedBdt] = useState<number>(0);
-  const [exchangeRateUsed, setExchangeRateUsed] = useState<number>(0);
-  const [conversionLoading, setConversionLoading] = useState(false);
 
   // Validation / Message states
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -65,18 +51,13 @@ export default function AddStudentPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [countriesRes, employeesRes, counselorsRes] = await Promise.all([
-          api.get('/countries'),
+        const [employeesRes, counselorsRes] = await Promise.all([
           api.get('/employees'),
           api.get('/counselors'),
         ]);
-        setCountries(countriesRes.data);
         setEmployees(employeesRes.data);
         setCounselors(counselorsRes.data);
         
-        if (countriesRes.data.length > 0) {
-          setSelectedCountryId(countriesRes.data[0].id);
-        }
         if (counselorsRes.data.length > 0) {
           setCounselorName(counselorsRes.data[0].name);
         }
@@ -86,52 +67,6 @@ export default function AddStudentPage() {
     };
     fetchData();
   }, []);
-
-  // Handle live currency BDT conversion whenever country or fee amount changes
-  useEffect(() => {
-    if (!selectedCountryId || !applicationFeeForeign || parseFloat(applicationFeeForeign) <= 0) {
-      setCalculatedBdt(0);
-      setExchangeRateUsed(0);
-      return;
-    }
-    const country = countries.find(c => c.id === Number(selectedCountryId));
-    if (!country) return;
-
-    const convertFee = async () => {
-      setConversionLoading(true);
-      try {
-        const todayStr = new Date().toISOString().split('T')[0];
-        const res = await api.get('/currency/convert', {
-          params: {
-            from: country.currency_code,
-            amount: parseFloat(applicationFeeForeign),
-            date: todayStr,
-          }
-        });
-        setCalculatedBdt(res.data.converted_bdt);
-        setExchangeRateUsed(res.data.rate);
-      } catch (err) {
-        console.error('Failed to convert application fee:', err);
-      } finally {
-        setConversionLoading(false);
-      }
-    };
-    
-    // Debounce to avoid calling on every keystroke
-    const timer = setTimeout(convertFee, 500);
-    return () => clearTimeout(timer);
-  }, [selectedCountryId, applicationFeeForeign, countries]);
-
-  // Force default choice when source type switches
-  useEffect(() => {
-    if (sourceType === 'social_media') {
-      setSourceName('Facebook');
-    } else if (employees.length > 0) {
-      setSourceName(employees[0].name);
-    } else {
-      setSourceName('');
-    }
-  }, [sourceType, employees]);
 
   // Form Validation
   const validateForm = (): boolean => {
@@ -173,24 +108,24 @@ export default function AddStudentPage() {
       newErrors.file_fee = 'File Opening Fee must be positive.';
     }
 
-    if (!selectedCountryId) {
-      newErrors.country = 'Destination country is required.';
-    }
-
-    if (!applicationFeeForeign || parseFloat(applicationFeeForeign) <= 0) {
-      newErrors.app_fee = 'Application Fee must be a positive number.';
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  // Force default choice when source type switches
+  useEffect(() => {
+    if (sourceType === 'social_media') {
+      setSourceName('Facebook');
+    } else if (employees.length > 0) {
+      setSourceName(employees[0].name);
+    } else {
+      setSourceName('');
+    }
+  }, [sourceType, employees]);
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
-
-    const country = countries.find(c => c.id === Number(selectedCountryId));
-    if (!country) return;
 
     setIsSubmitting(true);
 
@@ -204,10 +139,6 @@ export default function AddStudentPage() {
       source_name: sourceName,
       date_of_opening: dateOfOpening,
       file_opening_fee_bdt: parseFloat(fileOpeningFeeBdt),
-      country_id: country.id,
-      application_fee_foreign: parseFloat(applicationFeeForeign),
-      application_fee_bdt: calculatedBdt,
-      exchange_rate_used: exchangeRateUsed,
     };
 
     try {
@@ -235,14 +166,8 @@ export default function AddStudentPage() {
     if (employees.length > 0) setSourceName(employees[0].name);
     setDateOfOpening('');
     setFileOpeningFeeBdt('');
-    setApplicationFeeForeign('');
-    setCalculatedBdt(0);
-    setExchangeRateUsed(0);
-    if (countries.length > 0) setSelectedCountryId(countries[0].id);
     setErrors({});
   };
-
-  const selectedCountry = countries.find(c => c.id === Number(selectedCountryId));
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-8 sm:px-6 lg:px-8">
@@ -356,71 +281,7 @@ export default function AddStudentPage() {
               required
             />
 
-            {/* 8. Destination Country Dropdown */}
-            <div className="flex flex-col gap-1 w-full">
-              <label htmlFor="country-select" className="text-sm font-semibold text-gray-700">
-                Destination Country <span className="text-red-500">*</span>
-              </label>
-              <select
-                id="country-select"
-                value={selectedCountryId}
-                onChange={(e) => {
-                  setSelectedCountryId(Number(e.target.value));
-                  setApplicationFeeForeign('');
-                  setCalculatedBdt(0);
-                }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white shadow-sm outline-none transition-all duration-150 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-sm font-medium"
-              >
-                {countries.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name} ({c.currency_code})</option>
-                ))}
-              </select>
-              {errors.country && <span className="text-xs font-bold text-red-500 mt-0.5">{errors.country}</span>}
-            </div>
 
-            {/* 9. Dynamic Application Fee Input with currency prefix */}
-            <div className="flex flex-col gap-1 w-full">
-              <label className="text-sm font-semibold text-gray-700">
-                Application Fee ({selectedCountry?.currency_code || 'Foreign'}) <span className="text-red-500">*</span>
-              </label>
-              <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 shadow-sm transition-all duration-150">
-                <span className="bg-gray-100 border-r border-gray-300 px-3 py-2 text-sm font-bold text-gray-600 select-none whitespace-nowrap">
-                  {selectedCountry?.currency_symbol || '¤'}
-                </span>
-                <input
-                  type="number"
-                  value={applicationFeeForeign}
-                  onChange={(e) => setApplicationFeeForeign(e.target.value)}
-                  placeholder="Enter application fee"
-                  min="0"
-                  step="0.01"
-                  className="flex-1 px-3 py-2 bg-white outline-none text-sm font-medium"
-                />
-              </div>
-              {errors.app_fee && <span className="text-xs font-bold text-red-500 mt-0.5">{errors.app_fee}</span>}
-
-              {/* Calculated BDT display */}
-              <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                <span className="text-xs font-bold text-gray-500 block">
-                  Application Fee in BDT:
-                </span>
-                {conversionLoading ? (
-                  <span className="text-sm font-bold text-blue-600 flex items-center gap-2 mt-1">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Fetching latest exchange rates...
-                  </span>
-                ) : (
-                  <span className="text-lg font-extrabold text-blue-600 block mt-1">
-                    BDT {calculatedBdt.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                  </span>
-                )}
-                {exchangeRateUsed > 0 && (
-                  <span className="text-[10px] text-gray-400 font-medium block mt-1">
-                    Exchange Rate Used: 1 {selectedCountry?.currency_code} = {exchangeRateUsed} BDT
-                  </span>
-                )}
-              </div>
-            </div>
 
           </div>
 
@@ -522,9 +383,7 @@ export default function AddStudentPage() {
           message={successMessage}
           onConfirm={() => {
             setIsSuccessModalOpen(false);
-            if (registeredStudentId) {
-              router.push(`/invoices/create?studentId=${registeredStudentId}`);
-            }
+            handleClear();
           }}
         />
 
