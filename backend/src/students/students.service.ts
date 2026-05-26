@@ -118,11 +118,15 @@ export class StudentsService {
     const previous_due = latestInvoice
       ? latestInvoice.due_amount_bdt
       : student.file_opening_fee_bdt;
+    const previous_total = latestInvoice
+      ? latestInvoice.total_amount_bdt
+      : student.file_opening_fee_bdt;
 
     return {
       ...student,
       invoices,
       previous_due,
+      previous_total,
     };
   }
 

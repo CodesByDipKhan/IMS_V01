@@ -313,6 +313,12 @@ let PdfService = class PdfService {
               <td class="value-col">BDT ${parseFloat(String(invoice.application_fee_bdt)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
             </tr>
             ` : ''}
+            ${invoice.other_fee_bdt > 0 ? `
+            <tr>
+              <td class="label-col">Other Fee</td>
+              <td class="value-col">BDT ${parseFloat(String(invoice.other_fee_bdt)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            </tr>
+            ` : ''}
             <tr class="total-row">
               <td class="label-col" style="color: #0f172a;">Total Amount</td>
               <td class="value-col" style="color: #1e40af;">BDT ${parseFloat(String(invoice.total_amount_bdt)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>

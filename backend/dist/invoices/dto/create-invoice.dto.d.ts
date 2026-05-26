@@ -6,7 +6,9 @@ export declare class CreateInvoiceDto {
     payment_method: string;
     payment_detail?: string;
     bank_name?: string;
-    country_id: number;
-    application_fee_bdt: number;
+    country_id?: number;
+    application_fee_bdt?: number;
+    other_fee_bdt?: number;
+    comment?: string;
     paid_amount_bdt: number;
 }

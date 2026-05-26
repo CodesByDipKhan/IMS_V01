@@ -14,6 +14,8 @@ export declare class Invoice {
     country_id: number;
     country: Country;
     application_fee_bdt: number;
+    other_fee_bdt: number;
+    comment: string;
     total_amount_bdt: number;
     paid_amount_bdt: number;
     due_amount_bdt: number;

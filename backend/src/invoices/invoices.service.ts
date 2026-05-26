@@ -36,26 +36,30 @@ export class InvoicesService {
       throw new NotFoundException(`Student with ID ${createInvoiceDto.student_id} not found.`);
     }
 
-    // 2. Fetch the latest invoice of this student to calculate previous due
     const latestInvoice = await this.invoicesRepository.findOne({
       where: { student_id: student.id },
       order: { id: 'DESC' },
     });
-    const previousDue = latestInvoice ? latestInvoice.due_amount_bdt : student.file_opening_fee_bdt;
 
-    // 3. Calculate Total and Due BDT amounts
-    const totalAmount = previousDue + createInvoiceDto.application_fee_bdt;
+    // 2. Calculate running Total and Due BDT amounts
+    const baseTotal = latestInvoice ? latestInvoice.total_amount_bdt : student.file_opening_fee_bdt;
+    const baseDue = latestInvoice ? latestInvoice.due_amount_bdt : student.file_opening_fee_bdt;
+    const applicationFee = createInvoiceDto.application_fee_bdt || 0;
+    const otherFee = createInvoiceDto.other_fee_bdt || 0;
+    const addedFees = applicationFee + otherFee;
+    const totalAmount = baseTotal + addedFees;
+    const payableAmount = baseDue + addedFees;
 
-    // Guard: paid amount must not exceed total amount
-    if (createInvoiceDto.paid_amount_bdt > totalAmount) {
+    // Guard: paid amount must not exceed outstanding due plus newly added fees
+    if (createInvoiceDto.paid_amount_bdt > payableAmount) {
       throw new BadRequestException(
-        `Paid amount (${createInvoiceDto.paid_amount_bdt}) cannot exceed total amount (${totalAmount}).`
+        `Paid amount (${createInvoiceDto.paid_amount_bdt}) cannot exceed due amount (${payableAmount}).`
       );
     }
 
-    const dueAmount = totalAmount - createInvoiceDto.paid_amount_bdt;
+    const dueAmount = payableAmount - createInvoiceDto.paid_amount_bdt;
 
-    // 4. Global auto-incrementing invoice ID sequence (format: NextEd/INV/{number})
+    // 3. Global auto-incrementing invoice ID sequence (format: NextEd/INV/{number})
     let seq = await this.sequencesRepository.findOne({ where: { key: 'invoice_id' } });
     if (!seq) {
       seq = this.sequencesRepository.create({ key: 'invoice_id', value: 1 });
@@ -66,12 +70,12 @@ export class InvoicesService {
 
     const invoiceId = `NextEd/INV/${seq.value}`;
 
-    // 5. Replace forward slashes with underscores for safe file names
+    // 4. Replace forward slashes with underscores for safe file names
     const safeInvoiceId = invoiceId.replace(/\//g, '_');
     const pdfFilename = `${safeInvoiceId}.pdf`;
     const pdfPath = path.join(this.pdfStoragePath, pdfFilename);
 
-    // 6. Create and save the Database Invoice record
+    // 5. Create and save the Database Invoice record
     const invoice = this.invoicesRepository.create({
       ...createInvoiceDto,
       invoice_id: invoiceId,
@@ -88,7 +92,7 @@ export class InvoicesService {
       relations: { country: true },
     });
 
-    // 7. Trigger Puppeteer PDF generation
+    // 6. Trigger Puppeteer PDF generation
     try {
       await this.pdfService.generateInvoicePdf(
         populatedInvoice,

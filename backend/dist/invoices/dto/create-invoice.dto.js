@@ -21,6 +21,8 @@ class CreateInvoiceDto {
     bank_name;
     country_id;
     application_fee_bdt;
+    other_fee_bdt;
+    comment;
     paid_amount_bdt;
 }
 exports.CreateInvoiceDto = CreateInvoiceDto;
@@ -61,16 +63,27 @@ __decorate([
     __metadata("design:type", String)
 ], CreateInvoiceDto.prototype, "bank_name", void 0);
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNumber)(),
     __metadata("design:type", Number)
 ], CreateInvoiceDto.prototype, "country_id", void 0);
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.Min)(0, { message: 'Application fee in BDT must be positive.' }),
     __metadata("design:type", Number)
 ], CreateInvoiceDto.prototype, "application_fee_bdt", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0, { message: 'Other fee in BDT must be positive.' }),
+    __metadata("design:type", Number)
+], CreateInvoiceDto.prototype, "other_fee_bdt", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateInvoiceDto.prototype, "comment", void 0);
 __decorate([
     (0, class_validator_1.IsNotEmpty)(),
     (0, class_validator_1.IsNumber)(),

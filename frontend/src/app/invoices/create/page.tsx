@@ -18,6 +18,8 @@ interface Student {
   phone_number: string;
   file_opening_fee_bdt: number;
   application_fee_bdt: number;
+  previous_due?: number;
+  previous_total?: number;
 }
 
 function InvoiceFormContent() {
@@ -25,17 +27,12 @@ function InvoiceFormContent() {
   const searchParams = useSearchParams();
   const studentId = searchParams.get('studentId');
 
-  interface Country {
-    id: number;
-    name: string;
-  }
-
   // Student references
   const [student, setStudent] = useState<Student | null>(null);
   const [studentLoading, setStudentLoading] = useState(true);
 
   // Self-pay toggle
-  const [payingSelf, setPayingSelf] = useState(false);
+  const [payingSelf, setPayingSelf] = useState(true);
 
   // Form Fields
   const [payerName, setPayerName] = useState('');
@@ -46,11 +43,13 @@ function InvoiceFormContent() {
   const [paymentDetail, setPaymentDetail] = useState('');
   const [paidAmountBdt, setPaidAmountBdt] = useState('');
 
-  // Form Fields for Country & App Fee
-  const [countries, setCountries] = useState<Country[]>([]);
-  const [selectedCountryId, setSelectedCountryId] = useState<number | ''>('');
+  // Form Fields for fees
   const [applicationFeeBdt, setApplicationFeeBdt] = useState('');
-  const [previousDue, setPreviousDue] = useState(0);
+  const [otherFeeBdt, setOtherFeeBdt] = useState('');
+  const [comment, setComment] = useState('');
+  const [fileOpeningFee, setFileOpeningFee] = useState(0);
+  const [baseTotalAmount, setBaseTotalAmount] = useState(0);
+  const [baseDueAmount, setBaseDueAmount] = useState(0);
 
   // Form helpers
   const [totalAmount, setTotalAmount] = useState(0);
@@ -62,7 +61,7 @@ function InvoiceFormContent() {
   const [modalMsg, setModalMsg] = useState('');
   const [postSubmitAction, setPostSubmitAction] = useState<(() => void) | null>(null);
 
-  // Load student data and countries on startup
+  // Load student data on startup
   useEffect(() => {
     if (!studentId) {
       setErrors({ load: 'No student reference ID supplied in URL parameters.' });
@@ -72,20 +71,17 @@ function InvoiceFormContent() {
 
     const loadData = async () => {
       try {
-        const [studentRes, countriesRes] = await Promise.all([
-          api.get(`/students/${studentId}`),
-          api.get('/countries'),
-        ]);
+        const studentRes = await api.get(`/students/${studentId}`);
         const s = studentRes.data;
         setStudent(s);
-        setCountries(countriesRes.data);
-        if (countriesRes.data.length > 0) {
-          setSelectedCountryId(countriesRes.data[0].id);
-        }
-        const prevDue = parseFloat(s.previous_due) || 0;
-        setPreviousDue(prevDue);
-        setTotalAmount(prevDue);
-        setDueAmount(prevDue);
+        const openingFee = Number(s.file_opening_fee_bdt) || 0;
+        const previousTotal = Number(s.previous_total) || openingFee;
+        const previousDue = Number(s.previous_due) || 0;
+        setFileOpeningFee(openingFee);
+        setBaseTotalAmount(previousTotal);
+        setBaseDueAmount(previousDue);
+        setTotalAmount(previousTotal);
+        setDueAmount(previousDue);
       } catch (err) {
         setErrors({ load: 'Failed to retrieve registered student records from DB.' });
       } finally {
@@ -112,11 +108,14 @@ function InvoiceFormContent() {
   // Recalculate Live Total and Due Amounts as User types
   useEffect(() => {
     const appFee = parseFloat(applicationFeeBdt) || 0;
+    const otherFee = parseFloat(otherFeeBdt) || 0;
     const paid = parseFloat(paidAmountBdt) || 0;
-    const total = previousDue + appFee;
+    const addedFees = appFee + otherFee;
+    const total = baseTotalAmount + addedFees;
+    const dueBeforePayment = baseDueAmount + addedFees;
     setTotalAmount(total);
-    setDueAmount(Math.max(0, total - paid));
-  }, [applicationFeeBdt, previousDue, paidAmountBdt]);
+    setDueAmount(Math.max(0, dueBeforePayment - paid));
+  }, [applicationFeeBdt, otherFeeBdt, baseTotalAmount, baseDueAmount, paidAmountBdt]);
 
   // Validation
   const validateForm = (): boolean => {
@@ -140,22 +139,24 @@ function InvoiceFormContent() {
       newErrors.paymentDetail = 'Payment detail reference is required.';
     }
 
-    if (!selectedCountryId) {
-      newErrors.country = 'Destination Country is required.';
-    }
-
-    if (!applicationFeeBdt) {
-      newErrors.appFee = 'Application Fee BDT is required.';
-    } else if (Number(applicationFeeBdt) < 0) {
+    if (applicationFeeBdt && Number(applicationFeeBdt) < 0) {
       newErrors.appFee = 'Application Fee BDT must be a positive value.';
     }
+
+    if (otherFeeBdt && Number(otherFeeBdt) < 0) {
+      newErrors.otherFee = 'Other Fee BDT must be a positive value.';
+    }
+
+    const appFee = parseFloat(applicationFeeBdt) || 0;
+    const otherFee = parseFloat(otherFeeBdt) || 0;
+    const payableAmount = baseDueAmount + appFee + otherFee;
 
     if (!paidAmountBdt) {
       newErrors.paid = 'Paid Amount BDT is required.';
     } else if (Number(paidAmountBdt) < 0) {
       newErrors.paid = 'Paid Amount BDT must be a positive value.';
-    } else if (Number(paidAmountBdt) > totalAmount) {
-      newErrors.paid = `Paid Amount cannot exceed Total BDT: ${totalAmount.toFixed(2)}`;
+    } else if (Number(paidAmountBdt) > payableAmount) {
+      newErrors.paid = `Paid Amount cannot exceed Due BDT: ${payableAmount.toFixed(2)}`;
     }
 
     setErrors(newErrors);
@@ -175,8 +176,9 @@ function InvoiceFormContent() {
       payment_detail: paymentMethod === 'cash' ? null : paymentDetail,
       bank_name: paymentMethod === 'bank' ? bankName : null,
       paid_amount_bdt: parseFloat(paidAmountBdt),
-      country_id: Number(selectedCountryId),
-      application_fee_bdt: parseFloat(applicationFeeBdt),
+      application_fee_bdt: parseFloat(applicationFeeBdt) || 0,
+      other_fee_bdt: parseFloat(otherFeeBdt) || 0,
+      comment: comment.trim() || null,
     };
 
     try {
@@ -258,8 +260,8 @@ function InvoiceFormContent() {
               <span className="text-gray-900 font-bold">{student.name}</span>
             </div>
             <div>
-              <span className="text-[10px] text-gray-400 block uppercase">Previous Due BDT:</span>
-              <span className="text-gray-900 font-extrabold">BDT {previousDue.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+              <span className="text-[10px] text-gray-400 block uppercase">File Opening Fee BDT:</span>
+              <span className="text-gray-900 font-extrabold">BDT {fileOpeningFee.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
             </div>
           </div>
         </div>
@@ -272,7 +274,7 @@ function InvoiceFormContent() {
       )}
 
       <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
           
           {/* Invoice ID auto-generated */}
           <InputField
@@ -284,33 +286,6 @@ function InvoiceFormContent() {
             className="bg-gray-50 opacity-75"
           />
 
-          {/* Destination Country Dropdown */}
-          <div className="flex flex-col gap-1 w-full">
-            <label htmlFor="country-select" className="text-sm font-semibold text-gray-700">
-              Destination Country <span className="text-red-500">*</span>
-            </label>
-            <select
-              id="country-select"
-              value={selectedCountryId}
-              onChange={(e) => setSelectedCountryId(Number(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white shadow-sm outline-none transition-all duration-150 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-sm font-medium"
-            >
-              {countries.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-            {errors.country && <span className="text-xs font-bold text-red-500 mt-0.5">{errors.country}</span>}
-          </div>
-
-          {/* Previous Due Display */}
-          <div className="flex flex-col gap-1 w-full">
-            <span className="text-sm font-semibold text-gray-700">Previous Due Amount (BDT)</span>
-            <div className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-base font-extrabold text-gray-700 opacity-75 animate-in fade-in">
-              BDT {previousDue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-            </div>
-          </div>
-
-          {/* Application Fee in BDT directly */}
           <InputField
             label="Application Fee (BDT)"
             type="number"
@@ -318,7 +293,23 @@ function InvoiceFormContent() {
             onChange={(e) => setApplicationFeeBdt(e.target.value)}
             error={errors.appFee}
             placeholder="e.g. 5000"
-            required
+          />
+
+          <InputField
+            label="Other Fee (BDT)"
+            type="number"
+            value={otherFeeBdt}
+            onChange={(e) => setOtherFeeBdt(e.target.value)}
+            error={errors.otherFee}
+            placeholder="e.g. 1000"
+          />
+
+          <InputField
+            label="Comment"
+            type="text"
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Optional note"
           />
 
           {/* Self-Pay Toggle — spans full width */}
@@ -329,21 +320,21 @@ function InvoiceFormContent() {
                 <input
                   type="radio"
                   name="payingSelf"
-                  checked={!payingSelf}
-                  onChange={() => setPayingSelf(false)}
-                  className="accent-blue-600 h-4 w-4"
-                />
-                <span>No</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer text-sm font-medium">
-                <input
-                  type="radio"
-                  name="payingSelf"
                   checked={payingSelf}
                   onChange={() => setPayingSelf(true)}
                   className="accent-blue-600 h-4 w-4"
                 />
                 <span>Yes</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer text-sm font-medium">
+                <input
+                  type="radio"
+                  name="payingSelf"
+                  checked={!payingSelf}
+                  onChange={() => setPayingSelf(false)}
+                  className="accent-blue-600 h-4 w-4"
+                />
+                <span>No</span>
               </label>
             </div>
             {payingSelf && (

@@ -80,12 +80,17 @@ let InvoicesService = class InvoicesService {
             where: { student_id: student.id },
             order: { id: 'DESC' },
         });
-        const previousDue = latestInvoice ? latestInvoice.due_amount_bdt : student.file_opening_fee_bdt;
-        const totalAmount = previousDue + createInvoiceDto.application_fee_bdt;
-        if (createInvoiceDto.paid_amount_bdt > totalAmount) {
-            throw new common_1.BadRequestException(`Paid amount (${createInvoiceDto.paid_amount_bdt}) cannot exceed total amount (${totalAmount}).`);
+        const baseTotal = latestInvoice ? latestInvoice.total_amount_bdt : student.file_opening_fee_bdt;
+        const baseDue = latestInvoice ? latestInvoice.due_amount_bdt : student.file_opening_fee_bdt;
+        const applicationFee = createInvoiceDto.application_fee_bdt || 0;
+        const otherFee = createInvoiceDto.other_fee_bdt || 0;
+        const addedFees = applicationFee + otherFee;
+        const totalAmount = baseTotal + addedFees;
+        const payableAmount = baseDue + addedFees;
+        if (createInvoiceDto.paid_amount_bdt > payableAmount) {
+            throw new common_1.BadRequestException(`Paid amount (${createInvoiceDto.paid_amount_bdt}) cannot exceed due amount (${payableAmount}).`);
         }
-        const dueAmount = totalAmount - createInvoiceDto.paid_amount_bdt;
+        const dueAmount = payableAmount - createInvoiceDto.paid_amount_bdt;
         let seq = await this.sequencesRepository.findOne({ where: { key: 'invoice_id' } });
         if (!seq) {
             seq = this.sequencesRepository.create({ key: 'invoice_id', value: 1 });

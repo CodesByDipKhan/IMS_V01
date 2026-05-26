@@ -30,14 +30,23 @@ export class CreateInvoiceDto {
   @IsString()
   bank_name?: string; // Only for bank payment method
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsNumber()
-  country_id: number;
+  country_id?: number;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsNumber()
   @Min(0, { message: 'Application fee in BDT must be positive.' })
-  application_fee_bdt: number;
+  application_fee_bdt?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0, { message: 'Other fee in BDT must be positive.' })
+  other_fee_bdt?: number;
+
+  @IsOptional()
+  @IsString()
+  comment?: string;
 
   @IsNotEmpty()
   @IsNumber()

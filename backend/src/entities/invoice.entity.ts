@@ -48,6 +48,15 @@ export class Invoice {
   }})
   application_fee_bdt: number;
 
+  @Column('decimal', { nullable: true, precision: 12, scale: 2, transformer: {
+    to: (value: number) => value,
+    from: (value: string) => parseFloat(value)
+  }})
+  other_fee_bdt: number;
+
+  @Column({ nullable: true })
+  comment: string;
+
   @Column('decimal', { precision: 12, scale: 2, transformer: {
     to: (value: number) => value,
     from: (value: string) => parseFloat(value)

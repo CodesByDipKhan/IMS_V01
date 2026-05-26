@@ -27,6 +27,8 @@ let Invoice = class Invoice {
     country_id;
     country;
     application_fee_bdt;
+    other_fee_bdt;
+    comment;
     total_amount_bdt;
     paid_amount_bdt;
     due_amount_bdt;
@@ -91,6 +93,17 @@ __decorate([
         } }),
     __metadata("design:type", Number)
 ], Invoice.prototype, "application_fee_bdt", void 0);
+__decorate([
+    (0, typeorm_1.Column)('decimal', { nullable: true, precision: 12, scale: 2, transformer: {
+            to: (value) => value,
+            from: (value) => parseFloat(value)
+        } }),
+    __metadata("design:type", Number)
+], Invoice.prototype, "other_fee_bdt", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], Invoice.prototype, "comment", void 0);
 __decorate([
     (0, typeorm_1.Column)('decimal', { precision: 12, scale: 2, transformer: {
             to: (value) => value,
